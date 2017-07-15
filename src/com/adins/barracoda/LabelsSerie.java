@@ -1,0 +1,86 @@
+package com.adins.barracoda;
+
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+
+import java.awt.print.*;
+import java.awt.Rectangle;
+import net.sourceforge.barbecue.*; 
+import java.awt.Shape;
+public class LabelsSerie implements Printable {
+    private SheetLayout sheetLayout;
+    private LabelsSource labelsSource;
+    int numberOfPages =0 ;
+    int startLabel =0;
+    public  LabelsSerie (SheetLayout sl,LabelsSource  ls , int numberOfPages  ,int startLabel ) {
+        this.sheetLayout = sl;
+        this.labelsSource = ls;
+        this.numberOfPages = numberOfPages;
+        this.startLabel  = startLabel;
+    }
+    public int print(Graphics gr, PageFormat pageFormat, int pageIndex) throws PrinterException {
+            Graphics2D graphics = (Graphics2D) gr;
+            
+            Rectangle oriClip = graphics.getClipBounds();
+            sheetLayout.setPageFormat(pageFormat);
+            if (pageIndex >= numberOfPages ) return NO_SUCH_PAGE;
+            int numberoflabels = sheetLayout.number_of_labels_per_page();
+            int first_label = startLabel + (pageIndex * numberoflabels);
+            int last_label = first_label + (numberoflabels-1);
+            int li;
+       
+       
+            int ret = NO_SUCH_PAGE;
+            for (li = first_label; li <= last_label; li++) {
+                int modli =(li -first_label) % numberoflabels;
+                Double posx= sheetLayout.pos_x(modli);
+                Double posy= sheetLayout.pos_y(modli);
+                Double width = sheetLayout.size_x();
+                Double height = sheetLayout.size_y();
+                Rectangle clipRect = new Rectangle(posx.intValue(),  posy.intValue(), width.intValue() ,  height.intValue());
+               
+                 graphics.setClip(oriClip);
+            
+           
+                graphics.setClip( clipRect) ;
+                if (labelsSource.print(clipRect,graphics, li) == labelsSource.LABEL_EXIST) ret = PAGE_EXISTS; 
+              //  graphics.drawRect(posx.intValue(),  posy.intValue(), width.intValue() ,  height.intValue());
+                graphics.setClip(0,0,oriClip.width,oriClip.height);
+            }
+            graphics.setClip(0,0,oriClip.width,oriClip.height);
+           
+            //graphics.drawLine(0,0, oriClip.width , oriClip.height);
+            graphics.drawLine(0,0, 0 , 0);
+            return ret;
+            
+    }
+   
+
+
+	public static void main(String[] args)
+	{
+            int numpage =0;
+            int startnum=0;
+           numpage = Integer.parseInt(args[0]);
+           startnum = Integer.parseInt(args[1]);
+		try
+		{
+            SheetLayout  msl = new SheetLayout();
+			LabelsSerie ls = new LabelsSerie(msl , new LabelsSource(msl),numpage,startnum);
+			PrinterJob job = PrinterJob.getPrinterJob();
+			job.setPrintable(ls);
+			if (job.printDialog())
+			{
+				job.print();
+			}
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+
+	}
+
+
+
+}
